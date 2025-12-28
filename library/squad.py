@@ -12,7 +12,7 @@ class Squad:
     faction: str
     location: Location
 
-    sid: uuid.UUID = None
+    sid: str | None = None
     actors: list = field(default_factory=list)  # list of actors in the squad
 
     has_task: bool = False

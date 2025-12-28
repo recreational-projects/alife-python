@@ -185,7 +185,7 @@ class MapGrid:
 
         return True
 
-    def get_spawn_area(self, bias: tuple[float, float], fractions: Optional[tuple[float, float]] = None):
+    def get_spawn_area(self, bias: tuple[float, float] | None, fractions: Optional[tuple[float, float]] = None):
         """
             Create a spawning area given a bias ((0.0, 0.0) being an upper left corner, (1.0, 1.0) being the lower right)
             and a fraction parameter that determines the percentage of the grid in X and Y dimensions to include.
@@ -220,7 +220,7 @@ class MapGrid:
 
         return [x_min, y_min, x_max, y_max]
 
-    def remove(self, entity: type[Actor | Squad], square: Optional[Location] = None):
+    def remove(self, entity: Actor | Squad, square: Optional[Location] = None) -> bool:
         """Remove actor or squad from the grid. If grid square is not provided - attempt to get location from the entity"""
         index = 0 if isinstance(entity, Squad) else 1
         try:
@@ -235,7 +235,7 @@ class MapGrid:
 
         return True
 
-    def place(self, entity: type[Actor | Squad], square: Location):
+    def place(self, entity: Actor | Squad, square: Location) -> bool:
         """Place actor or squad on the grid square"""
         index = 0 if isinstance(entity, Squad) else 1
         self._grid[square][index].append(entity)
