@@ -6,7 +6,7 @@ from library import MapGrid, CombatTask, IdleTask, MoveTask, LootTask, HuntArtif
 from config import FACTIONS, SPAWN_FREQUENCY, MIN_FACTION_SQUADS, MAX_FACTION_SQUADS, LOOT_SELLING_THRESHOLD
 
 
-async def main(loop, grid: MapGrid):
+async def main(loop: asyncio.AbstractEventLoop, grid: MapGrid) -> None:
     tasks = []
 
     while True:
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         for _ in range(num_squads):
             map_grid.spawn(f)
 
-    async def scheduled_spawner(grid: MapGrid):
+    async def scheduled_spawner(grid: MapGrid) -> None:
         # Spawn a new random squad every X seconds
         while True:
             await asyncio.sleep(SPAWN_FREQUENCY)
