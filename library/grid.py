@@ -1,61 +1,63 @@
 import os
 import pickle
 import random
+from collections import defaultdict, deque
+from dataclasses import dataclass, field
+from itertools import product
+from pathlib import Path
 
-from collections import deque, defaultdict
 from colorama import Fore, just_fix_windows_console
 
+from config import FACTIONS, GRID_X_SIZE, GRID_Y_SIZE, MAP, MAX_NUM_MESSAGES, SHOW_GRID
 from library.actor import Actor
 from library.pathfinder import Pathfinder
 from library.squad import Squad
 from library.types import Location
 
-from config import MAX_NUM_MESSAGES, SHOW_GRID, GRID_X_SIZE, GRID_Y_SIZE, MAP, FACTIONS
+BASE_PATH = Path(__file__).resolve().parent
 
 type _SquarePopulation = tuple[list[Squad], list[Actor]]
 
 
+@dataclass
 class MapGrid:
-    """Defines the map and contains all map-related function"""
+    """Defines the map and contains all map-related functions."""
 
-    def __init__(self) -> None:
-        self._grid: defaultdict[Location, _SquarePopulation] = defaultdict(lambda: ([], []))
-        self._msg_log: deque[str] = deque([], maxlen=MAX_NUM_MESSAGES)
-        self._squares_to_delete: set[Location] = set()
+    pathfinder: Pathfinder = field(init=False)
+    _area_map: dict[str, set[Location]] = field(init=False, default_factory=dict)
+    _grid: defaultdict = field(init=False, default_factory=defaultdict)
+    _msg_log: deque[str] = field(init=False, default_factory=deque)
+    _squares_to_delete: set[Location] = field(init=False, default_factory=set)
 
-        dirname = os.path.dirname(__file__)
-        mapfile = os.path.abspath(os.path.join(dirname, f'../maps/{MAP}'))
-        area_map: dict[
-            str, set[Location]
-        ] = {"pois": set(), "fields": set(), "traders": set(), "obstacles": set()}
+    def __post_init__(self) -> None:
+        just_fix_windows_console()  # Fix colored display on Windows
 
+        self._area_map = {"pois": set(), "fields": set(), "traders": set(), "obstacles": set()}
+        self._grid = defaultdict(lambda: ([], []))
+        self._msg_log = deque([], maxlen=MAX_NUM_MESSAGES)
         try:
-            with open(mapfile, 'rb') as f:
+            with Path.open(BASE_PATH / f"../maps/{MAP}", "rb") as f:
                 tentative_map = pickle.load(f)
                 if isinstance(tentative_map, set):  # retain support for simple maps
-                    area_map = {"pois": set(), "fields": set(), "traders": set(), "obstacles": tentative_map}
+                    self._area_map["obstacles"] = tentative_map
                 else:
-                    area_map = tentative_map
+                    self._area_map = tentative_map
 
         except Exception as e:
             self.add_log_msg("INFO", f" Failed to load map data: {e}")
-            area_map = {"pois": set(), "fields": set(), "traders": set(), "obstacles": set()}
 
-        self._area_map = area_map
-        self.pathfinder = Pathfinder(area_map["obstacles"])
-
-        # Fix colored display on Windows
-        just_fix_windows_console()
+        self.pathfinder = Pathfinder(self._area_map["obstacles"])
 
     @property
     def squares(self) -> defaultdict[Location, _SquarePopulation]:
         return self._grid
 
-    def get_obstacles(self) -> set[Location]:
+    @property
+    def obstacles(self) -> set[Location]:
         return self._area_map["obstacles"]
 
     def get_closest_of_type(self, t: str, point: Location) -> Location | None:
-        """Return the closest coordinate of a given entity(i.e.: trader, field, poi) relative to a given position"""
+        """Return the closest coordinate of a given entity (i.e.: trader, field, poi) relative to a given position"""
         closest = sorted(self._area_map[t], key=lambda x: self.pathfinder.manhattan_distance(point, x))
         if closest:
             return closest[0]
@@ -63,17 +65,25 @@ class MapGrid:
         return None
 
     def get_squad_in_vicinity(
-        self, point: Location, factions: set[str], distance_factor: int = 20, max_actors: int = 5) -> Squad | None:
+        self, point: Location, factions: set[str], distance_factor: int = 20, max_actors: int = 5
+    ) -> Squad | None:
         """Find the closest squad of specified factions within a given range"""
-        low_x, high_x = max(point[0] - GRID_X_SIZE // distance_factor, 0), min(point[0] + GRID_X_SIZE // distance_factor, GRID_X_SIZE)
-        low_y, high_y = max(point[1] - GRID_Y_SIZE // distance_factor, 0), min(point[1] + GRID_Y_SIZE // distance_factor, GRID_Y_SIZE)
+        low_x, high_x = (
+            max(point[0] - GRID_X_SIZE // distance_factor, 0),
+            min(point[0] + GRID_X_SIZE // distance_factor, GRID_X_SIZE),
+        )
+        low_y, high_y = (
+            max(point[1] - GRID_Y_SIZE // distance_factor, 0),
+            min(point[1] + GRID_Y_SIZE // distance_factor, GRID_Y_SIZE),
+        )
 
         candidates: list[Squad] = []
-        for x in range(low_x, high_x):
-            for y in range(low_y, high_y):
-                if self._grid.get((x, y)):
-                    squadlist = self._grid[(x, y)][0]
-                    candidates.extend([squad for squad in squadlist if squad.faction in factions and squad.num_actors() <= max_actors])
+        for x, y in product(range(low_x, high_x), range(low_y, high_y)):
+            if self._grid.get((x, y)):
+                squadlist = self._grid[(x, y)][0]
+                candidates.extend(
+                    [squad for squad in squadlist if squad.faction in factions and squad.num_actors() <= max_actors]
+                )
 
         if not candidates:
             return None
@@ -96,13 +106,13 @@ class MapGrid:
         for r in rows:
             row_str = f"{r:>2} |"
             for c in cols:
-                if ((c, r)) in self._area_map["obstacles"]:
+                if (c, r) in self._area_map["obstacles"]:
                     content = "#"
-                elif ((c, r)) in self._area_map["traders"]:
+                elif (c, r) in self._area_map["traders"]:
                     content = "T"
-                elif ((c, r)) in self._area_map["fields"]:
+                elif (c, r) in self._area_map["fields"]:
                     content = "F"
-                elif ((c, r)) in self._area_map["pois"]:
+                elif (c, r) in self._area_map["pois"]:
                     content = "P"
                 else:
                     cell = self._grid.get((c, r), ([], []))
@@ -115,6 +125,7 @@ class MapGrid:
                         content = "x"
                     else:
                         content = ""
+
                 row_str += f"{content:^7}"
 
             print(row_str)
@@ -145,7 +156,7 @@ class MapGrid:
             "TRDE": Fore.GREEN,
             "HUNT": Fore.LIGHTYELLOW_EX,
             "IDLE": Fore.CYAN,
-            "INFO": Fore.WHITE
+            "INFO": Fore.WHITE,
         }
 
         if color := color_map.get(msg_type):
@@ -163,17 +174,23 @@ class MapGrid:
             print(logged_msg)
 
     def spawn(self, faction: str, location: Location | None = None) -> None:
-        """Spawn random faction squad on the map"""
+        """Spawn faction squad on the map"""
 
         if location is None:
             bias = FACTIONS[faction].spawn_bias
             lower_x, lower_y, upper_x, upper_y = (0, 0, GRID_X_SIZE, GRID_Y_SIZE)
 
             if bias is not None:
-                lower_x, lower_y, upper_x, upper_y = self.get_spawn_area(FACTIONS[faction].spawn_bias)
+                lower_x, lower_y, upper_x, upper_y = self.get_spawn_area(bias=bias)
 
             # avoid spawning on top of obstacles
-            while (location := (random.randint(lower_x, upper_x), random.randint(lower_y, upper_y))) in self._area_map["obstacles"]: pass
+            while (location := (random.randint(lower_x, upper_x), random.randint(lower_y, upper_y))) in self._area_map[
+                "obstacles"
+            ]:
+                pass
+
+        if location is None:
+            raise TypeError("Failed to spawn squad: could not find a location.")
 
         if location is None:
             raise TypeError("Couldn't generate valid location for spawn")
@@ -189,11 +206,10 @@ class MapGrid:
         self.add_log_msg("INFO", f"Spawned a new {num_actors}-actor {faction.upper()} squad", location)
 
     @staticmethod
-    def get_spawn_area(bias: tuple[float, float] | None, fractions: tuple[float, float] | None = None) -> list[int]:
-        """
-            Create a spawning area given a bias ((0.0, 0.0) being an upper left corner, (1.0, 1.0) being the lower right)
-            and a fraction parameter that determines the percentage of the grid in X and Y dimensions to include.
-            This method is used to spawn faction squads in their designated areas.
+    def get_spawn_area(bias: tuple[float, float], fractions: tuple[float, float] | None = None) -> list[int]:
+        """Create a spawning area given a bias ((0.0, 0.0) being an upper left corner, (1.0, 1.0) being the lower right)
+        and a fraction parameter that determines the percentage of the grid in X and Y dimensions to include.
+        This method is used to spawn faction squads in their designated areas.
         """
         if bias is None:
             return [0, 0, GRID_X_SIZE, GRID_Y_SIZE]
@@ -214,10 +230,10 @@ class MapGrid:
         cy = y_bias * GRID_Y_SIZE
 
         # Compute boundaries
-        x_min = int(round(cx - box_w / 2))
-        x_max = int(round(cx + box_w / 2))
-        y_min = int(round(cy - box_h / 2))
-        y_max = int(round(cy + box_h / 2))
+        x_min = round(cx - box_w / 2)
+        x_max = round(cx + box_w / 2)
+        y_min = round(cy - box_h / 2)
+        y_max = round(cy + box_h / 2)
 
         # Clamp to grid
         x_min = max(0, x_min)

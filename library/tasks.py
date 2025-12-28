@@ -108,7 +108,7 @@ class MoveTask(Task):
     def __init__(self, grid: MapGrid, squad: Squad, dest: Location | None = None) -> None:
         # generate random destination if it was not specified
         if dest is None:
-            while (dest := (random.randint(0, config.GRID_X_SIZE - 1), random.randint(0, config.GRID_Y_SIZE - 1))) in grid.get_obstacles(): pass
+            while (dest := (random.randint(0, config.GRID_X_SIZE - 1), random.randint(0, config.GRID_Y_SIZE - 1))) in grid.obstacles: pass
 
         if dest is None:
             raise TypeError("Couldn't generate valid location for MoveTask")
