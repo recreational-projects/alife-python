@@ -1,5 +1,4 @@
 import uuid
-
 from dataclasses import dataclass, field
 
 from library.actor import Actor
@@ -9,11 +8,12 @@ from library.types import Location
 @dataclass
 class Squad:
     """Squad on the grid, made up of multiple actors. Executes tasks"""
+
     faction: str
     location: Location
 
     sid: str = field(init=False)
-    actors: list[Actor] = field(default_factory=list)
+    actors: list = field(default_factory=list)  # list of actors in the squad
 
     has_task: bool = False
     in_combat: bool = False
@@ -23,9 +23,10 @@ class Squad:
         self.sid = uuid.uuid4().hex[-12:]
 
     def __str__(self) -> str:
-        return f"{self.faction} squad (SID={self.sid}) ({self.num_actors()} {self.num_actors() > 1 and "actors" or "actor"})"
+        return f"{self.faction} squad (SID={self.sid}) ({self.size} {self.size > 1 and 'actors' or 'actor'})"
 
-    def num_actors(self) -> int:
+    @property
+    def size(self) -> int:
         return len(self.actors)
 
     def is_busy(self) -> bool:

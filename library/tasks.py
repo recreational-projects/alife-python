@@ -1,11 +1,9 @@
 import asyncio
 import random
 from abc import ABC
-
 from collections.abc import Awaitable
 
 import config
-
 from library.actor import Actor
 from library.grid import MapGrid
 from library.squad import Squad
@@ -35,7 +33,7 @@ async def move_to(grid: MapGrid, squad: Squad, dest: Location) -> bool:
 
 
 class Task(ABC):
-    """Base class for all tasks"""
+    """Abstract base class for all tasks"""
 
     _steps: list[Awaitable]  # can chain multiple steps to create more complex tasks
 
@@ -73,18 +71,18 @@ class CombatTask(Task):
         # More squad members with more experience + higher relative firepower = higher overall power
         winner = random.choices([left, right], weights=[left_firepower, right_firepower])[0]
 
-        def biased_outcome(low: int, high: int, inverted: bool = False) -> int:
+        def _biased_losses(*, low: int = 0, high: int, inverted: bool = False) -> int:
             """Generate a random number of losses, with bias towards a specific end of the range"""
-            bias = inverted and 1 - (random.random() ** 3.0) or random.random() ** 3.0
+            bias = float(inverted and 1 - (random.random() ** 3.0) or random.random() ** 3.0)
             return round(low + (high - low) * bias)
 
         await asyncio.sleep(config.COMBAT_DURATION)
 
         for squad in (left, right):
-            losses = biased_outcome(0, squad.num_actors(), squad is not winner)
+            losses = _biased_losses(high=squad.size, inverted=squad is not winner)
 
-            msg = f"{squad} {losses and f"lost {losses} {losses > 1 and "men" or "man"}" or "took no casualties"} in combat"
-            if losses == squad.num_actors():
+            msg = f"{squad} {losses and f'lost {losses} {losses > 1 and "men" or "man"}' or 'took no casualties'} in combat"
+            if losses == squad.size:
                 msg += " and was wiped out"
 
             grid.add_log_msg("CMBT", msg, squad.location)
@@ -108,10 +106,13 @@ class MoveTask(Task):
     def __init__(self, grid: MapGrid, squad: Squad, dest: Location | None = None) -> None:
         # generate random destination if it was not specified
         if dest is None:
-            while (dest := (random.randint(0, config.GRID_X_SIZE - 1), random.randint(0, config.GRID_Y_SIZE - 1))) in grid.obstacles: pass
+            while (
+                dest := (random.randint(0, config.GRID_X_SIZE - 1), random.randint(0, config.GRID_Y_SIZE - 1))
+            ) in grid.obstacles:
+                pass
 
         if dest is None:
-            raise TypeError("Couldn't generate valid location for MoveTask")
+            raise TypeError("Can't create MoveTask: couldn't find valid random location")
 
         self._steps = [self._run(grid, squad, dest)]
 
@@ -129,7 +130,8 @@ class MoveTask(Task):
         while path:
             next_square = path.pop(0)
             # interrupt task if movement has failed
-            if not await move_to(grid, squad, next_square): break
+            if not await move_to(grid, squad, next_square):
+                break
 
         squad.has_task = False
         self.award_exp(squad)
@@ -143,7 +145,9 @@ class HuntArtifactsTask(Task):
     def __init__(self, grid: MapGrid, squad: Squad) -> None:
         closest_field = grid.get_closest_of_type("fields", squad.location)
         if closest_field:
-            grid.add_log_msg("ARTI", f"{squad} is going on an artifact hunt at the nearest field {closest_field}", squad.location)
+            grid.add_log_msg(
+                "ARTI", f"{squad} is going on an artifact hunt at the nearest field {closest_field}", squad.location
+            )
             steps = MoveTask(grid, squad, closest_field).get_steps()
             steps.append(self._run(grid, squad))
             self._steps = steps
@@ -159,11 +163,12 @@ class HuntArtifactsTask(Task):
         if squad.in_combat:
             return False
 
-        losses = random.randint(0, squad.num_actors() // 2)
+        losses = random.randint(0, squad.size // 2)
         if losses:
-            grid.add_log_msg("ARTI",
-                f"{squad} has lost {losses} {losses > 1 and "men" or "man"} while hunting for artifacts",
-                squad.location
+            grid.add_log_msg(
+                "ARTI",
+                f"{squad} has lost {losses} {losses > 1 and 'men' or 'man'} while hunting for artifacts",
+                squad.location,
             )
 
             for actor in squad.actors[:losses]:
@@ -237,17 +242,13 @@ class LootTask(Task):
         msg += " body..."
 
         grid.add_log_msg("LOOT", msg, actor.location)
-
         squad.is_looting = True
-
         actor_loot_value = actor.loot_value
         actor.loot_value = 0
 
         await asyncio.sleep(config.LOOT_DURATION)
         grid.remove(actor)
-
         random.choice(squad.actors).loot_value += actor_loot_value  # award loot to a random actor in a squad
-
         squad.is_looting = False
 
         return True
@@ -257,16 +258,13 @@ class HuntSquadTask(Task):
     """Hunt another squad for bounty"""
 
     def __init__(self, grid: MapGrid, squad: Squad) -> None:
-        target = grid.get_squad_in_vicinity(
-            squad.location, config.FACTIONS[squad.faction].hostile, max_actors=squad.num_actors()
-        )
+        target = grid.get_squad_in_vicinity(squad.location, config.FACTIONS[squad.faction].hostile, max_actors=squad.size)
 
         if not isinstance(target, Squad):
             self._steps = []
         else:
             grid.add_log_msg("HUNT", f"{squad} is hunting {target} at {target.location}", squad.location)
             self._steps = [self._run(grid, squad, target)]
-
 
     async def _run(self, grid: MapGrid, squad: Squad, target: Squad) -> bool:
         path = grid.pathfinder.create_path(squad.location, target.location)

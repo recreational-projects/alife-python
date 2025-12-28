@@ -82,7 +82,7 @@ class MapGrid:
             if self._grid.get((x, y)):
                 squadlist = self._grid[(x, y)][0]
                 candidates.extend(
-                    [squad for squad in squadlist if squad.faction in factions and squad.num_actors() <= max_actors]
+                    [squad for squad in squadlist if squad.faction in factions and squad.size <= max_actors]
                 )
 
         if not candidates:
