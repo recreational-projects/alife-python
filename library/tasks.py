@@ -53,7 +53,7 @@ class Task(ABC):
     @staticmethod
     def award_exp(squad: Squad) -> bool:
         """Award exp for task completion"""
-        if config.FACTIONS[squad.faction]["can_gain_exp"]:
+        if config.FACTIONS[squad.faction].can_gain_exp:
             for actor in squad.actors:
                 actor.gain_exp(random.randint(100, 300))
                 actor.rank_up()
@@ -68,8 +68,8 @@ class CombatTask(Task):
         self._steps = [self._run(grid, left, right)]
 
     async def _run(self, grid: MapGrid, left: Squad, right: Squad) -> bool:
-        left_firepower = sum([a.experience for a in left.actors]) * config.FACTIONS[left.faction]["relative_firepower"]
-        right_firepower = sum([a.experience for a in right.actors]) * config.FACTIONS[right.faction]["relative_firepower"]
+        left_firepower = sum([a.experience for a in left.actors]) * config.FACTIONS[left.faction].relative_firepower
+        right_firepower = sum([a.experience for a in right.actors]) * config.FACTIONS[right.faction].relative_firepower
 
         # determine "winning" squad, weighted by firepower.
         # More squad members with more experience + higher relative firepower = higher overall power
@@ -263,7 +263,7 @@ class HuntSquadTask(Task):
 
     def __init__(self, grid: MapGrid, squad: Squad) -> None:
         target = grid.get_squad_in_vicinity(
-            squad.location, config.FACTIONS[squad.faction]["hostile"], max_actors=squad.num_actors()
+            squad.location, config.FACTIONS[squad.faction].hostile, max_actors=squad.num_actors()
         )
 
         if target:

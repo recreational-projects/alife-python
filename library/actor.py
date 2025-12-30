@@ -17,7 +17,7 @@ class Actor:
 
     def __post_init__(self) -> None:
         """Set-up actor after creation"""
-        if FACTIONS[self.faction]["can_gain_exp"]:
+        if FACTIONS[self.faction].can_gain_exp:
             if not self.experience: self.gain_exp(random.randint(1, (len(RANKS) - 1) * EXP_PER_RANK))
         else:
             # assume that actors that don't gain exp are "average" for combat purposes

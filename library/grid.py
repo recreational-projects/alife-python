@@ -58,7 +58,7 @@ class MapGrid:
         return None
 
     def get_squad_in_vicinity(
-        self, point: Location, factions: list[str], distance_factor: int = 20, max_actors: int = 5
+        self, point: Location, factions: set[str], distance_factor: int = 20, max_actors: int = 5
     ) -> Squad | bool:
         """Find closes squad of specified faction within a given range"""
         low_x, high_x = max(point[0] - GRID_X_SIZE // distance_factor, 0), min(point[0] + GRID_X_SIZE // distance_factor, GRID_X_SIZE)
@@ -166,11 +166,11 @@ class MapGrid:
         """Spawn random faction squad on the map"""
 
         if location is None:
-            bias = FACTIONS[faction]["spawn_bias"]
+            bias = FACTIONS[faction].spawn_bias
             lower_x, lower_y, upper_x, upper_y = (0, 0, GRID_X_SIZE, GRID_Y_SIZE)
 
             if bias is not None:
-                lower_x, lower_y, upper_x, upper_y = self.get_spawn_area(FACTIONS[faction]["spawn_bias"])
+                lower_x, lower_y, upper_x, upper_y = self.get_spawn_area(FACTIONS[faction].spawn_bias)
 
             # avoid spawning on top of obstacles
             while (location := (random.randint(lower_x, upper_x), random.randint(lower_y, upper_y))) in self._area_map["obstacles"]: pass
