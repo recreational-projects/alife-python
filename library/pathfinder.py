@@ -1,33 +1,34 @@
 import heapq
-
 from collections import defaultdict
+from dataclasses import InitVar, dataclass, field
 
-from config import GRID_X_SIZE, GRID_Y_SIZE, PATHFINDING_MODE, CLUSTER_SIZE
-
+from config import CLUSTER_SIZE, GRID_X_SIZE, GRID_Y_SIZE, PATHFINDING_MODE
 from library.types import Location
 
+_DIRECTIONS = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
 
+
+@dataclass
 class Pathfinder:
     """Everything related to finding a path on the grid"""
 
-    def __init__(self, obstacles: set[Location]) -> None:
+    obstacles: InitVar[set[Location]]
+    _obstacles: set[Location] = field(init=False, default_factory=set)
+    _path_cache: dict[
+        tuple[Location, Location],
+        list[Location],
+    ] = field(init=False, default_factory=dict)
+    """Cached computed path chunks for faster pathfinding."""
+    _clusters: dict[Location, list[Location]] = field(init=False, default_factory=dict)
+    _hpa_graph: defaultdict[Location, list[Location]] = field(init=False, default_factory=defaultdict)
 
-        # Cache computed path chunks for faster pathfinding
-        self._path_cache: dict[
-            tuple[Location, Location],
-            list[Location],
-        ] = {}
-        self._neighbors_including_diagonals = [
-            (0, 1), (1, 1), (1, 0), (1, -1),
-            (0, -1), (-1, -1), (-1, 0), (-1, 1)
-        ]
+    def __post_init__(self, obstacles: set[Location]) -> None:
         self._obstacles = obstacles
-
         if PATHFINDING_MODE == "hpa":
             """
-                For performance reasons it's optimal to pre-compute HPA* cluster links if obstacles are static
-                If obstacle set changes between pathfinding calls the new set can be passed
-                directly into create_path method
+            For performance reasons it's optimal to pre-compute HPA* cluster links if obstacles are static
+            If obstacle set changes between pathfinding calls the new set can be passed
+            directly into create_path method
             """
             print("[INFO] PRE-COMPUTING HPA* CLUSTERS. THIS MAY TAKE A WHILE...")
             self._clusters = self._precompute_clusters()
@@ -42,8 +43,11 @@ class Pathfinder:
         for x in range(0, GRID_X_SIZE, CLUSTER_SIZE):
             for y in range(0, GRID_Y_SIZE, CLUSTER_SIZE):
                 cid = (x // CLUSTER_SIZE, y // CLUSTER_SIZE)
-                clusters[cid] = [(i, j) for i in range(x, min(x + CLUSTER_SIZE, GRID_X_SIZE))
-                                          for j in range(y, min(y + CLUSTER_SIZE, GRID_Y_SIZE))]
+                clusters[cid] = [
+                    (i, j)
+                    for i in range(x, min(x + CLUSTER_SIZE, GRID_X_SIZE))
+                    for j in range(y, min(y + CLUSTER_SIZE, GRID_Y_SIZE))
+                ]
 
         return clusters
 
@@ -51,12 +55,12 @@ class Pathfinder:
         graph = defaultdict(list)
         for cid, cells in self._clusters.items():
             cx, cy = cid
-            for dx, dy in self._neighbors_including_diagonals:
+            for dx, dy in _DIRECTIONS:
                 nid = (cx + dx, cy + dy)
                 if nid in self._clusters:
                     # Check if there's any walkable shared-border cell
                     border_ok = False
-                    for (x, y) in cells:
+                    for x, y in cells:
                         nx, ny = x + dx * CLUSTER_SIZE // max(1, abs(dx)), y + dy * CLUSTER_SIZE // max(1, abs(dy))
                         if 0 <= nx < GRID_X_SIZE and 0 <= ny < GRID_Y_SIZE and (nx, ny) not in obstacles:
                             border_ok = True
@@ -123,10 +127,10 @@ class Pathfinder:
     def create_8way_astar_path(self, start: Location, goal: Location, obstacles: set[Location]) -> list[Location] | None:
         """A* pathfinding on a 2D grid with 8-direction movement"""
 
-        open_set: list[tuple[float, float, Location]] = []
+        open_set: list = []
         heapq.heappush(open_set, (self.chebyshev_distance(start, goal), 0, start))
         came_from: dict[Location, Location] = {}
-        g_score = {start: 0.0}
+        g_score = {start: 0}
 
         while open_set:
             _, current_g, current = heapq.heappop(open_set)
@@ -139,14 +143,14 @@ class Pathfinder:
 
                 return path[::-1]
 
-            for dx, dy in self._neighbors_including_diagonals:
+            for dx, dy in _DIRECTIONS:
                 neighbor = (current[0] + dx, current[1] + dy)
                 if not self.in_bounds(*neighbor) or neighbor in obstacles:
                     continue
                 # Diagonals are more expensive
                 step_cost = 1.4142 if dx != 0 and dy != 0 else 1.0
                 tentative_g = current_g + step_cost
-                if tentative_g < g_score.get(neighbor, float('inf')):
+                if tentative_g < g_score.get(neighbor, float("inf")):
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g
                     f_score = tentative_g + self.chebyshev_distance(neighbor, goal)
@@ -178,7 +182,10 @@ class Pathfinder:
             for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
                 nx, ny = current[0] + dx, current[1] + dy
                 if self.in_bounds(nx, ny) and (nx, ny) not in obstacles:
-                    heapq.heappush(open_set, (g + 1 + self.manhattan_distance((nx, ny), goal), g + 1, (nx, ny), path + [(nx, ny)]))
+                    heapq.heappush(
+                        open_set,
+                        (g + 1 + self.manhattan_distance((nx, ny), goal), g + 1, (nx, ny), path + [(nx, ny)]),
+                    )
 
         return None
 
@@ -204,7 +211,7 @@ class Pathfinder:
         cluster_path = None
 
         while open_set:
-            f, g, cur, path = heapq.heappop(open_set)
+            _f, g, cur, path = heapq.heappop(open_set)
             if cur == goal_c:
                 cluster_path = path
                 break
@@ -229,9 +236,8 @@ class Pathfinder:
             # Find a border cell between these two clusters
             border_cells = []
             for cell in self._clusters[from_c]:
-                if any(cluster_of((cell[0] + dx, cell[1] + dy)) == to_c for dx, dy in self._neighbors_including_diagonals):
-                    if cell not in obstacles:
-                        border_cells.append(cell)
+                if any(cluster_of((cell[0] + dx, cell[1] + dy)) == to_c for dx, dy in _DIRECTIONS) and cell not in obstacles:
+                    border_cells.append(cell)
 
             # Pick the closest border cell to our current position
             border_cells.sort(key=lambda p: self.manhattan_distance(p, current))
