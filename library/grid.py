@@ -4,7 +4,6 @@ import random
 
 from collections import deque, defaultdict
 from colorama import Fore, just_fix_windows_console
-from typing import Optional
 
 from library.actor import Actor
 from library.pathfinder import Pathfinder
@@ -17,7 +16,7 @@ from config import MAX_NUM_MESSAGES, SHOW_GRID, GRID_X_SIZE, GRID_Y_SIZE, MAP, F
 class MapGrid:
     """Defines the map and contains all map-related function"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._grid = defaultdict(lambda: ([], []))
         self._msg_log = deque([], maxlen=MAX_NUM_MESSAGES)
         self._squares_to_delete = set()
@@ -44,13 +43,13 @@ class MapGrid:
         # Fix colored display on Windows
         just_fix_windows_console()
 
-    def get_grid(self):
+    def get_grid(self) -> defaultdict:
         return self._grid
 
-    def get_obstacles(self):
+    def get_obstacles(self) -> set[Location]:
         return self._area_map["obstacles"]
 
-    def get_closest_of_type(self, t: str, point: Location):
+    def get_closest_of_type(self, t: str, point: Location) -> Location | None:
         """Return the closest coordinate of a given entity(i.e.: trader, field, poi) relative to a given position"""
         closest = sorted(self._area_map[t], key=lambda x: self.pathfinder.manhattan_distance(point, x))
         if closest:
@@ -58,7 +57,9 @@ class MapGrid:
 
         return None
 
-    def get_squad_in_vicinity(self, point: Location, factions: list[str], distance_factor=20, max_actors=5):
+    def get_squad_in_vicinity(
+        self, point: Location, factions: list[str], distance_factor: int = 20, max_actors: int = 5
+    ) -> Squad | bool:
         """Find closes squad of specified faction within a given range"""
         low_x, high_x = max(point[0] - GRID_X_SIZE // distance_factor, 0), min(point[0] + GRID_X_SIZE // distance_factor, GRID_X_SIZE)
         low_y, high_y = max(point[1] - GRID_Y_SIZE // distance_factor, 0), min(point[1] + GRID_Y_SIZE // distance_factor, GRID_Y_SIZE)
@@ -75,7 +76,7 @@ class MapGrid:
 
         return sorted(candidates, key=lambda x: self.pathfinder.manhattan_distance(point, x.location))[0]
 
-    def draw(self):
+    def draw(self) -> bool:
         """Draw current grid state in console"""
 
         # Extract row/column labels
@@ -121,7 +122,7 @@ class MapGrid:
 
         return True
 
-    def refresh(self):
+    def refresh(self) -> bool | None:
         """Redraw the grid in the terminal"""
         if not SHOW_GRID:
             return False
@@ -129,7 +130,7 @@ class MapGrid:
         os.system("cls" if os.name == "nt" else "printf '\033c\033[3J'")
         self.draw()
 
-    def add_log_msg(self, msg_type: str, message: str, square: Optional[Location] = None):
+    def add_log_msg(self, msg_type: str, message: str, square: Location | None = None) -> bool:
         """Logging helper"""
 
         parts = []
@@ -160,7 +161,7 @@ class MapGrid:
 
         return True
 
-    def spawn(self, faction: str, location: Optional[Location] = None):
+    def spawn(self, faction: str, location: Location | None = None) -> bool:
         """Spawn random faction squad on the map"""
 
         if location is None:
@@ -185,7 +186,7 @@ class MapGrid:
 
         return True
 
-    def get_spawn_area(self, bias: tuple[float, float] | None, fractions: Optional[tuple[float, float]] = None):
+    def get_spawn_area(self, bias: tuple[float, float] | None, fractions: tuple[float, float] | None = None) -> list[int]:
         """
             Create a spawning area given a bias ((0.0, 0.0) being an upper left corner, (1.0, 1.0) being the lower right)
             and a fraction parameter that determines the percentage of the grid in X and Y dimensions to include.
@@ -220,7 +221,7 @@ class MapGrid:
 
         return [x_min, y_min, x_max, y_max]
 
-    def remove(self, entity: Actor | Squad, square: Optional[Location] = None) -> bool:
+    def remove(self, entity: Actor | Squad, square: Location | None = None) -> bool:
         """Remove actor or squad from the grid. If grid square is not provided - attempt to get location from the entity"""
         index = 0 if isinstance(entity, Squad) else 1
         try:
@@ -242,7 +243,7 @@ class MapGrid:
 
         return True
 
-    def cleanup(self):
+    def cleanup(self) -> bool:
         """Clean up empty squares. On larger grids they take up a lot of memory"""
         for square in self._squares_to_delete:
             del self._grid[square]
