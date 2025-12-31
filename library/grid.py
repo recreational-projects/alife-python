@@ -122,13 +122,14 @@ class MapGrid:
 
         return True
 
-    def refresh(self) -> bool | None:
+    def refresh(self) -> bool:
         """Redraw the grid in the terminal"""
         if not SHOW_GRID:
             return False
 
         os.system("cls" if os.name == "nt" else "printf '\033c\033[3J'")
         self.draw()
+        return True
 
     def add_log_msg(self, msg_type: str, message: str, square: Location | None = None) -> bool:
         """Logging helper"""
@@ -186,7 +187,8 @@ class MapGrid:
 
         return True
 
-    def get_spawn_area(self, bias: tuple[float, float] | None, fractions: tuple[float, float] | None = None) -> list[int]:
+    @staticmethod
+    def get_spawn_area(bias: tuple[float, float] | None, fractions: tuple[float, float] | None = None) -> list[int]:
         """
             Create a spawning area given a bias ((0.0, 0.0) being an upper left corner, (1.0, 1.0) being the lower right)
             and a fraction parameter that determines the percentage of the grid in X and Y dimensions to include.
