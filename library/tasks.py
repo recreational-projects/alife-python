@@ -1,7 +1,7 @@
 import asyncio
 import random
 
-from typing import Awaitable, Optional
+from collections.abc import Awaitable
 
 import config
 
@@ -11,7 +11,7 @@ from library.squad import Squad
 from library.types import Location
 
 
-async def move_to(grid: MapGrid, squad: Squad, dest: Location):
+async def move_to(grid: MapGrid, squad: Squad, dest: Location) -> bool:
     """Helper function to handle square-by-square movement"""
 
     if not squad.actors:
@@ -38,7 +38,7 @@ class Task:
 
     _steps: list[Awaitable]  # can chain multiple steps to create more complex tasks
 
-    async def execute(self):
+    async def execute(self) -> list[Awaitable]:
         """Execute steps in order and aggregate results"""
         res = []
         while self._steps:
@@ -46,10 +46,10 @@ class Task:
 
         return res
 
-    def get_steps(self):
+    def get_steps(self) -> list[Awaitable]:
         return self._steps
 
-    def award_exp(self, squad: Squad):
+    def award_exp(self, squad: Squad) -> bool:
         """Award exp for task completion"""
         if config.FACTIONS[squad.faction]["can_gain_exp"]:
             for actor in squad.actors:
@@ -62,11 +62,10 @@ class Task:
 class CombatTask(Task):
     """Handles combat between two hostile squads"""
 
-    def __init__(self, grid: MapGrid, left: Squad, right: Squad):
+    def __init__(self, grid: MapGrid, left: Squad, right: Squad) -> None:
         self._steps = [self._run(grid, left, right)]
 
-    async def _run(self, grid: MapGrid, left: Squad, right: Squad):
-
+    async def _run(self, grid: MapGrid, left: Squad, right: Squad) -> bool:
         left_firepower = sum([a.experience for a in left.actors]) * config.FACTIONS[left.faction]["relative_firepower"]
         right_firepower = sum([a.experience for a in right.actors]) * config.FACTIONS[right.faction]["relative_firepower"]
 
@@ -74,7 +73,7 @@ class CombatTask(Task):
         # More squad members with more experience + higher relative firepower = higher overall power
         winner = random.choices([left, right], weights=[left_firepower, right_firepower])[0]
 
-        def biased_outcome(low, high, inverted=False):
+        def biased_outcome(low: int, high: int, inverted: bool = False) -> int:
             """Generate a random number of losses, with bias towards a specific end of the range"""
             bias = inverted and 1 - (random.random() ** 3.0) or random.random() ** 3.0
             return round(low + (high - low) * bias)
@@ -108,15 +107,14 @@ class CombatTask(Task):
 class MoveTask(Task):
     """Handles movement, duh"""
 
-    def __init__(self, grid: MapGrid, squad: Squad, dest: Optional[Location] = None):
+    def __init__(self, grid: MapGrid, squad: Squad, dest: Location | None = None) -> None:
         # generate random destination if it was not specified
         if dest is None:
             while (dest := (random.randint(0, config.GRID_X_SIZE - 1), random.randint(0, config.GRID_Y_SIZE - 1))) in grid.get_obstacles(): pass
 
         self._steps = [self._run(grid, squad, dest)]
 
-    async def _run(self, grid: MapGrid, squad: Squad, dest: Location):
-
+    async def _run(self, grid: MapGrid, squad: Squad, dest: Location) -> bool:
         if squad.location == dest:  # already there
             return True
 
@@ -141,7 +139,7 @@ class MoveTask(Task):
 class HuntArtifactsTask(Task):
     """Handles artifact hunts"""
 
-    def __init__(self, grid: MapGrid, squad: Squad):
+    def __init__(self, grid: MapGrid, squad: Squad) -> None:
         closest_field = grid.get_closest_of_type("fields", squad.location)
         if closest_field:
             grid.add_log_msg("ARTI", f"{squad} is going on an artifact hunt at the nearest field {closest_field}", squad.location)
@@ -151,7 +149,7 @@ class HuntArtifactsTask(Task):
         else:
             self._steps = []  # map does not support artifact fields
 
-    async def _run(self, grid: MapGrid, squad: Squad):
+    async def _run(self, grid: MapGrid, squad: Squad) -> bool:
         grid.add_log_msg("ARTI", f"{squad} is hunting for artifacts", squad.location)
 
         squad.has_task = True
@@ -183,7 +181,7 @@ class HuntArtifactsTask(Task):
 class TradeTask(Task):
     """Handles loot selling"""
 
-    def __init__(self, grid: MapGrid, squad: Squad):
+    def __init__(self, grid: MapGrid, squad: Squad) -> None:
         closest_trader = grid.get_closest_of_type("traders", squad.location)
         if closest_trader:
             steps = MoveTask(grid, squad, closest_trader).get_steps()
@@ -192,8 +190,7 @@ class TradeTask(Task):
         else:
             self._steps = []  # map does not support traders
 
-    async def _run(self, grid: MapGrid, squad: Squad):
-
+    async def _run(self, grid: MapGrid, squad: Squad) -> bool:
         squad.has_task = True
         grid.add_log_msg("TRDE", f"{squad} is selling habar", squad.location)
 
@@ -209,13 +206,13 @@ class TradeTask(Task):
 class IdleTask(Task):
     """Handles waiting at the current location"""
 
-    def __init__(self, grid: MapGrid, squad: Squad, duration: Optional[int] = None):
+    def __init__(self, grid: MapGrid, squad: Squad, duration: int | None = None) -> None:
         if duration is None:
             duration = random.randint(config.MIN_IDLE_DURATION, config.MAX_IDLE_DURATION)
 
         self._steps = [self._run(grid, squad, duration)]
 
-    async def _run(self, grid: MapGrid, squad: Squad, duration: int):
+    async def _run(self, grid: MapGrid, squad: Squad, duration: int) -> bool:
         grid.add_log_msg("IDLE", f"{squad} is waiting for {duration} seconds", squad.location)
         squad.has_task = True
         await asyncio.sleep(duration)
@@ -227,10 +224,10 @@ class IdleTask(Task):
 class LootTask(Task):
     """Handles looting of bodies"""
 
-    def __init__(self, grid: MapGrid, squad: Squad, actor: Actor):
+    def __init__(self, grid: MapGrid, squad: Squad, actor: Actor) -> None:
         self._steps = [self._run(grid, squad, actor)]
 
-    async def _run(self, grid: MapGrid, squad: Squad, actor: Actor):
+    async def _run(self, grid: MapGrid, squad: Squad, actor: Actor) -> bool:
         if actor.loot_value is None:
             return False  # already looted
 
@@ -259,8 +256,10 @@ class LootTask(Task):
 class HuntSquadTask(Task):
     """Hunt another squad for bounty"""
 
-    def __init__(self, grid: MapGrid, squad: Squad):
-        target = grid.get_squad_in_vicinity(squad.location, config.FACTIONS[squad.faction]["hostile"], max_actors=squad.num_actors())
+    def __init__(self, grid: MapGrid, squad: Squad) -> None:
+        target = grid.get_squad_in_vicinity(
+            squad.location, config.FACTIONS[squad.faction]["hostile"], max_actors=squad.num_actors()
+        )
 
         if target:
             grid.add_log_msg("HUNT", f"{squad} is hunting {target} at {target.location}", squad.location)
@@ -268,7 +267,7 @@ class HuntSquadTask(Task):
         else:
             self._steps = []
 
-    async def _run(self, grid: MapGrid, squad: Squad, target: Squad):
+    async def _run(self, grid: MapGrid, squad: Squad, target: Squad) -> bool:
         path = grid.pathfinder.create_path(squad.location, target.location)
         if not path:
             return False

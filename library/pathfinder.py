@@ -1,7 +1,6 @@
 import heapq
 
 from collections import defaultdict
-from typing import Optional
 
 from config import GRID_X_SIZE, GRID_Y_SIZE, PATHFINDING_MODE, CLUSTER_SIZE
 
@@ -11,7 +10,7 @@ from library.types import Location
 class Pathfinder:
     """Everything related to finding a path on the grid"""
 
-    def __init__(self, obstacles: set[Location]):
+    def __init__(self, obstacles: set[Location]) -> None:
 
         # Cache computed path chunks for faster pathfinding
         self._path_cache = {}
@@ -31,7 +30,7 @@ class Pathfinder:
             self._clusters = self._precompute_clusters()
             self._hpa_graph = self._compute_cluster_links(obstacles)
 
-    def _precompute_clusters(self):
+    def _precompute_clusters(self) -> dict[Location, list[Location]]:
         """Pre-compute HPA clusters and cluster links"""
 
         # Build cluster adjacency graph
@@ -44,7 +43,7 @@ class Pathfinder:
 
         return clusters
 
-    def _compute_cluster_links(self, obstacles: set[Location]):
+    def _compute_cluster_links(self, obstacles: set[Location]) -> defaultdict[Location, list[Location]]:
         graph = defaultdict(list)
         for cid, cells in self._clusters.items():
             cx, cy = cid
@@ -64,16 +63,16 @@ class Pathfinder:
 
         return graph
 
-    def manhattan_distance(self, a: Location, b: Location):
+    def manhattan_distance(self, a: Location, b: Location) -> int:
         return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-    def chebyshev_distance(self, a: Location, b: Location):
+    def chebyshev_distance(self, a: Location, b: Location) -> int:
         return max(abs(a[0] - b[0]), abs(a[1] - b[1]))
 
-    def in_bounds(self, x: int, y: int):
+    def in_bounds(x: int, y: int) -> bool:
         return 0 <= x < GRID_X_SIZE and 0 <= y < GRID_Y_SIZE
 
-    def create_path(self, start: Location, dest: Location, obstacles: Optional[set[Location]] = None):
+    def create_path(self, start: Location, dest: Location, obstacles: set[Location] | None = None) -> list[Location] | None:
         """Create a path using a specified pathfinder algorithm"""
 
         final_obstacle_set = self._obstacles
@@ -91,7 +90,7 @@ class Pathfinder:
 
         return path
 
-    def create_simple_path(self, start: Location, dest: Location):
+    def create_simple_path(self, start: Location, dest: Location) -> list[Location]:
         """Simple direct path on a 2D grid with 8-direction movement"""
 
         x, y = start
@@ -113,7 +112,7 @@ class Pathfinder:
 
         return path
 
-    def create_8way_astar_path(self, start: Location, goal: Location, obstacles: set[Location]):
+    def create_8way_astar_path(self, start: Location, goal: Location, obstacles: set[Location]) -> list[Location] | None:
         """A* pathfinding on a 2D grid with 8-direction movement"""
 
         open_set = []
@@ -147,7 +146,7 @@ class Pathfinder:
 
         return None
 
-    def create_astar_path(self, start: Location, goal: Location, obstacles: set[Location]):
+    def create_astar_path(self, start: Location, goal: Location, obstacles: set[Location]) -> list[Location] | None:
         """A* pathfinding on a 2D grid with 4-direction movement"""
 
         open_set = [(self.manhattan_distance(start, goal), 0, start, [start])]
@@ -175,11 +174,11 @@ class Pathfinder:
 
         return None
 
-    def create_hpa_path(self, start: Location, goal: Location, obstacles: set[Location]):
+    def create_hpa_path(self, start: Location, goal: Location, obstacles: set[Location]) -> list[Location] | None:
         """HPA* pathfinding on a 2D grid with 8-directional movement"""
 
-        def cluster_of(cell):
-            return (cell[0] // CLUSTER_SIZE, cell[1] // CLUSTER_SIZE)
+        def cluster_of(cell: Location) -> Location:
+            return cell[0] // CLUSTER_SIZE, cell[1] // CLUSTER_SIZE
 
         start_c, goal_c = cluster_of(start), cluster_of(goal)
         # Both points inside the same cluster - fallback to plain A*

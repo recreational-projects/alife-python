@@ -15,7 +15,7 @@ class Actor:
     experience: int = 0
     loot_value: int | None = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Set-up actor after creation"""
         if FACTIONS[self.faction]["can_gain_exp"]:
             if not self.experience: self.gain_exp(random.randint(1, (len(RANKS) - 1) * EXP_PER_RANK))
@@ -27,16 +27,16 @@ class Actor:
 
         self.loot_value = self.experience // random.randint(10, 30)  # assume actor's loot value is proportional to his experience
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.faction.capitalize()} actor ({self.rank}) at location {self.location}"
 
-    def gain_exp(self, exp):
+    def gain_exp(self, exp: int) -> bool:
         """Simple method to track actor experience"""
         self.experience = min((len(RANKS) - 1) * EXP_PER_RANK, self.experience + exp)
 
         return True
 
-    def rank_up(self):
+    def rank_up(self) -> bool:
         """Increase actor rank based on current experience"""
         self.rank = RANKS[self.experience // EXP_PER_RANK]
 
