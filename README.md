@@ -11,10 +11,17 @@ Squads on the grid can
 - gain experience and ranks when they complete certain tasks (i.e.: idling on location does not award exp, but traveling across the area does)
 - have higher chances of surviving combat as they gain more experience
 
-# HOWTO
-    cd alife-python/
-    pip3 install -r requirements.txt
-    python3 main.py
+# HOWTO (fork specific)
+
+```shell
+cd alife-python/
+pip install --editable .  # OR uv pip install --editable .
+```
+This gives you an editable installation, so you can configure by editing `config.py`. 
+
+```shell
+python main.py
+```
 
 # PATHFINDERS
 - `simple`: direct shortest path to destination. Ignores obstacles
