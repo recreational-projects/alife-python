@@ -1,0 +1,37 @@
+[project]
+name = "alife-python"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "colorama==0.4.6",
+    "uvloop==0.21.0 ; sys_platform != 'win32'",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "ruff>=0.14.10",
+]
+
+[tool.ruff]
+line-length = 127
+
+[tool.ruff.lint]
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = [
+    "C901",
+    "E5",
+    "E9",
+    "F63",
+    "F7",
+    "F82",
+    "W",
+]
+ignore = []
+
+[tool.setuptools]
+py-modules = []
