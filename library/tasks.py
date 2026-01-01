@@ -1,5 +1,6 @@
 import asyncio
 import random
+from abc import ABC
 
 from collections.abc import Awaitable
 
@@ -33,7 +34,7 @@ async def move_to(grid: MapGrid, squad: Squad, dest: Location) -> bool:
     return True
 
 
-class Task:
+class Task(ABC):
     """Base class for all tasks"""
 
     _steps: list[Awaitable]  # can chain multiple steps to create more complex tasks

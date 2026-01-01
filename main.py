@@ -2,7 +2,7 @@ import asyncio
 import os
 import random
 
-from library import MapGrid, CombatTask, IdleTask, MoveTask, LootTask, HuntArtifactsTask, TradeTask, HuntSquadTask
+from library import MapGrid, Task, CombatTask, IdleTask, MoveTask, LootTask, HuntArtifactsTask, TradeTask, HuntSquadTask
 from config import FACTIONS, SPAWN_FREQUENCY, MIN_FACTION_SQUADS, MAX_FACTION_SQUADS, LOOT_SELLING_THRESHOLD
 
 
@@ -22,14 +22,13 @@ async def main(loop: asyncio.AbstractEventLoop, grid: MapGrid) -> None:
                     grid.remove(squad, square)
                     continue
 
+                squad_faction = FACTIONS[squad.faction]
                 # Seek nearby hostile squads
                 j = index + 1
                 while j < len(squadlist):
                     nxt = squadlist[j]
                     # not hostile to each other OR squad already dead OR is fighting someone else
-                    if nxt.faction not in FACTIONS[squad.faction]["hostile"]\
-                    or not nxt.actors\
-                    or (squad.in_combat or nxt.in_combat):
+                    if nxt.faction not in squad_faction.hostile or not nxt.actors or (squad.in_combat or nxt.in_combat):
                         j += 1
                         continue
 
@@ -45,7 +44,7 @@ async def main(loop: asyncio.AbstractEventLoop, grid: MapGrid) -> None:
                     continue
 
                 # Loot if there are bodies in the same square. Prevents movement
-                if actorlist and FACTIONS[squad.faction]["can_loot"]:
+                if actorlist and squad_faction.can_loot:
                     max_lootable_corpses = min(len(actorlist), len(squad.actors))  # 1 guy loots 1 corpse at a time
                     for actor in filter(lambda x: x.loot_value is not None, actorlist[:max_lootable_corpses]):
                         tasks.append(loop.create_task(LootTask(grid, squad, actor).execute()))
@@ -54,14 +53,14 @@ async def main(loop: asyncio.AbstractEventLoop, grid: MapGrid) -> None:
                     if squad.is_busy():
                         continue
 
-                    potential_tasks = [IdleTask, MoveTask]
-                    if sum(actor.loot_value for actor in squad.actors) >= LOOT_SELLING_THRESHOLD and FACTIONS[squad.faction]["can_trade"]:
+                    potential_tasks: list[type[Task]] = [IdleTask, MoveTask]
+                    if sum(actor.loot_value for actor in squad.actors) >= LOOT_SELLING_THRESHOLD and squad_faction.can_trade:
                         potential_tasks.append(TradeTask)
 
-                    if FACTIONS[squad.faction]["can_hunt_artifacts"]:
+                    if squad_faction.can_hunt_artifacts:
                         potential_tasks.append(HuntArtifactsTask)
 
-                    if FACTIONS[squad.faction]["can_hunt_squads"]:
+                    if squad_faction.can_hunt_squads:
                         potential_tasks.append(HuntSquadTask)
 
                     # These tasks are the same priority and can be randomly selected
