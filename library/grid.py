@@ -17,13 +17,17 @@ class MapGrid:
     """Defines the map and contains all map-related function"""
 
     def __init__(self) -> None:
-        self._grid = defaultdict(lambda: ([], []))
-        self._msg_log = deque([], maxlen=MAX_NUM_MESSAGES)
-        self._squares_to_delete = set()
+        self._grid: defaultdict[
+            Location, tuple[list, list]
+        ] = defaultdict(lambda: ([], []))
+        self._msg_log: deque[str] = deque([], maxlen=MAX_NUM_MESSAGES)
+        self._squares_to_delete:set[Location] = set()
 
         dirname = os.path.dirname(__file__)
         mapfile = os.path.abspath(os.path.join(dirname, f'../maps/{MAP}'))
-        area_map = {"pois": set(), "fields": set(), "traders": set(), "obstacles": set()}
+        area_map: dict[
+            str, set[Location]
+        ] = {"pois": set(), "fields": set(), "traders": set(), "obstacles": set()}
 
         try:
             with open(mapfile, 'rb') as f:
@@ -43,7 +47,9 @@ class MapGrid:
         # Fix colored display on Windows
         just_fix_windows_console()
 
-    def get_grid(self) -> defaultdict:
+    def get_grid(self) -> defaultdict[
+            Location, tuple[list, list]
+        ]:
         return self._grid
 
     def get_obstacles(self) -> set[Location]:
@@ -58,13 +64,12 @@ class MapGrid:
         return None
 
     def get_squad_in_vicinity(
-        self, point: Location, factions: set[str], distance_factor: int = 20, max_actors: int = 5
-    ) -> Squad | bool:
+        self, point: Location, factions: set[str], distance_factor: int = 20, max_actors: int = 5) -> Squad | bool:
         """Find closes squad of specified faction within a given range"""
         low_x, high_x = max(point[0] - GRID_X_SIZE // distance_factor, 0), min(point[0] + GRID_X_SIZE // distance_factor, GRID_X_SIZE)
         low_y, high_y = max(point[1] - GRID_Y_SIZE // distance_factor, 0), min(point[1] + GRID_Y_SIZE // distance_factor, GRID_Y_SIZE)
 
-        candidates = []
+        candidates: list[Squad] = []
         for x in range(low_x, high_x):
             for y in range(low_y, high_y):
                 if self._grid.get((x, y)):
@@ -175,6 +180,9 @@ class MapGrid:
             # avoid spawning on top of obstacles
             while (location := (random.randint(lower_x, upper_x), random.randint(lower_y, upper_y))) in self._area_map["obstacles"]: pass
 
+        if location is None:
+            raise TypeError("Couldn't generate valid location for spawn")
+
         squad = Squad(faction, location)
         # Generate actors
         num_actors = random.randint(1, 5)
@@ -194,6 +202,9 @@ class MapGrid:
             and a fraction parameter that determines the percentage of the grid in X and Y dimensions to include.
             This method is used to spawn faction squads in their designated areas.
         """
+        if bias is None:
+            return [0, 0, GRID_X_SIZE, GRID_Y_SIZE]
+
         x_bias, y_bias = bias
         # If no fractions are specified, default to a 20% of the grid
         if fractions is None:

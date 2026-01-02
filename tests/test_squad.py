@@ -1,9 +1,10 @@
+import pytest
 import uuid
 
 from library import Squad, Actor
 
 
-def test_squad_init(monkeypatch):
+def test_squad_init(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr('uuid.uuid4', lambda: uuid.UUID("6148b8ca-a130-11f0-b311-8c859097fb57"))
     squad = Squad(faction="stalker", location=(0, 55))
     actor = Actor("stalker", (0, 25))
@@ -19,7 +20,7 @@ def test_squad_init(monkeypatch):
     assert str(squad) == "stalker squad (SID=8c859097fb57) (1 actor)", "Squad string should be correct"
 
 
-def test_squad_update():
+def test_squad_update() -> None:
     squad = Squad(faction="stalker", location=(2, 25))
     actor = Actor("stalker", (2, 25))
 

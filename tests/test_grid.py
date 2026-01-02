@@ -1,7 +1,9 @@
+import pytest
+
 from library import MapGrid, Squad
 
 
-def test_grid_logger(monkeypatch):
+def test_grid_logger(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr('library.grid.SHOW_GRID', True)
 
     grid = MapGrid()
@@ -15,7 +17,7 @@ def test_grid_logger(monkeypatch):
     assert grid._msg_log.pop() == "\x1b[31m[CMBT]\x1b[39m [SQUARE=(1, 3)] TEST COMBAT", "Message should be correctly formatted"
 
 
-def test_grid_spawner():
+def test_grid_spawner() -> None:
     grid = MapGrid()
     grid.spawn("stalker", (5, 33))
 
@@ -32,7 +34,7 @@ def test_grid_spawner():
     assert squad.location == (5, 33), "Entity should have correct location set"
 
 
-def test_grid_remove():
+def test_grid_remove() -> None:
     grid = MapGrid()
     grid.spawn("stalker", (4, 22))
 
@@ -45,7 +47,7 @@ def test_grid_remove():
     assert (4, 22) not in grid_dict, "Square should be removed from the grid"
 
 
-def test_grid_place():
+def test_grid_place() -> None:
     grid = MapGrid()
     squad = Squad(faction="stalker", location=(0, 0))
     grid.place(squad, (3, 26))

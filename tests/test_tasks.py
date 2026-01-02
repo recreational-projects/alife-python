@@ -4,7 +4,7 @@ from library import CombatTask, IdleTask, MoveTask, LootTask, HuntArtifactsTask,
 
 
 @pytest.mark.asyncio
-async def test_combat_task(monkeypatch):
+async def test_combat_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
 
     squad1 = Squad("stalker", (1, 1))
@@ -38,7 +38,7 @@ async def test_combat_task(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_move_task(monkeypatch):
+async def test_move_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
     squad = Squad("stalker", (0, 0))
     squad.add_actor(Actor("stalker", (0, 0)))
@@ -57,7 +57,7 @@ async def test_move_task(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_idle_task():
+async def test_idle_task() -> None:
     grid = MapGrid()
     squad = Squad("test_faction", (0, 0))
 
@@ -66,7 +66,7 @@ async def test_idle_task():
 
 
 @pytest.mark.asyncio
-async def test_hunt_artifacts_task(monkeypatch):
+async def test_hunt_artifacts_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
     grid._area_map["fields"].extend([(1, 1), (4, 4)])
 
@@ -88,7 +88,7 @@ async def test_hunt_artifacts_task(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_trade_task(monkeypatch):
+async def test_trade_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
     grid._area_map["traders"].extend([(1, 1), (4, 4)])
 
@@ -110,7 +110,7 @@ async def test_trade_task(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_loot_task(monkeypatch):
+async def test_loot_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
 
     squad = Squad("stalker", (1, 1))
@@ -133,7 +133,7 @@ async def test_loot_task(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_hunt_squad_task(monkeypatch):
+async def test_hunt_squad_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
 
     squad1 = Squad("stalker", (0, 0))

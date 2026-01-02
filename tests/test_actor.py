@@ -1,7 +1,7 @@
 from library import Actor
 
 
-def test_actor_init():
+def test_actor_init() -> None:
     actor = Actor(faction="stalker", location=(0, 99), experience=100)
     assert actor.faction == "stalker", "Actor faction should be set correctly"
     assert actor.location == (0, 99), "Actor location should be set correctly"
@@ -9,7 +9,7 @@ def test_actor_init():
     assert str(actor) == "Stalker actor (Rookie) at location (0, 99)", "Actor string should be correct"
 
 
-def test_actor_update():
+def test_actor_update() -> None:
     actor = Actor(faction="stalker", location=(0, 99), experience=100)
     actor.loot_value = None
     actor.location = (55, 14)
@@ -19,7 +19,7 @@ def test_actor_update():
     assert str(actor) == "Stalker actor (Rookie) at location (55, 14)", "Actor string should be correct"
 
 
-def test_actor_exp_and_rank():
+def test_actor_exp_and_rank() -> None:
     actor = Actor(faction="stalker", location=(0, 99), experience=100)
     actor.gain_exp(2000)
     actor.rank_up()

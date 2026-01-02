@@ -114,6 +114,9 @@ class MoveTask(Task):
         if dest is None:
             while (dest := (random.randint(0, config.GRID_X_SIZE - 1), random.randint(0, config.GRID_Y_SIZE - 1))) in grid.get_obstacles(): pass
 
+        if dest is None:
+            raise TypeError("Couldn't generate valid location for MoveTask")
+
         self._steps = [self._run(grid, squad, dest)]
 
     async def _run(self, grid: MapGrid, squad: Squad, dest: Location) -> bool:
@@ -266,11 +269,12 @@ class HuntSquadTask(Task):
             squad.location, config.FACTIONS[squad.faction].hostile, max_actors=squad.num_actors()
         )
 
-        if target:
+        if not isinstance(target, Squad):
+            self._steps = []
+        else:
             grid.add_log_msg("HUNT", f"{squad} is hunting {target} at {target.location}", squad.location)
             self._steps = [self._run(grid, squad, target)]
-        else:
-            self._steps = []
+
 
     async def _run(self, grid: MapGrid, squad: Squad, target: Squad) -> bool:
         path = grid.pathfinder.create_path(squad.location, target.location)
