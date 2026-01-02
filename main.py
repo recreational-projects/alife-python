@@ -12,7 +12,7 @@ async def main(loop: asyncio.AbstractEventLoop, grid: MapGrid) -> None:
     while True:
         grid.refresh()
 
-        for square, entities in grid.get_grid().items():
+        for square, entities in grid.squares.items():
             squadlist = entities[0]
             actorlist = entities[1]
 

@@ -21,11 +21,10 @@ def test_grid_spawner() -> None:
     grid = MapGrid()
     grid.spawn("stalker", (5, 33))
 
-    grid_dict = grid.get_grid()
-    assert len(grid_dict.keys()) == 1, "Only one square should be populated"
-    assert (5, 33) in grid_dict, "Entity should be spawned at the expected square"
+    assert len(grid.squares.keys()) == 1, "Only one square should be populated"
+    assert (5, 33) in grid.squares, "Entity should be spawned at the expected square"
 
-    entities = grid_dict[(5, 33)]
+    entities = grid.squares[(5, 33)]
     assert len(entities[0]) == 1, "Only one entity should spawn"
 
     squad = entities[0][0]
@@ -38,20 +37,17 @@ def test_grid_remove() -> None:
     grid = MapGrid()
     grid.spawn("stalker", (4, 22))
 
-    grid_dict = grid.get_grid()
-
-    squad = grid_dict[(4, 22)][0][0]
+    squad = grid.squares[(4, 22)][0][0]
     grid.remove(squad)
     grid.cleanup()
 
-    assert (4, 22) not in grid_dict, "Square should be removed from the grid"
+    assert (4, 22) not in grid.squares, "Square should be removed from the grid"
 
 
 def test_grid_place() -> None:
     grid = MapGrid()
     squad = Squad(faction="stalker", location=(0, 0))
     grid.place(squad, (3, 26))
-    grid_dict = grid.get_grid()
 
-    assert (3, 26) in grid_dict, "Square should be added to the grid"
-    assert grid_dict[(3, 26)][0][0] is squad, "Square should contain correct entity"
+    assert (3, 26) in grid.squares, "Square should be added to the grid"
+    assert grid.squares[(3, 26)][0][0] is squad, "Square should contain correct entity"

@@ -12,16 +12,16 @@ from library.types import Location
 
 from config import MAX_NUM_MESSAGES, SHOW_GRID, GRID_X_SIZE, GRID_Y_SIZE, MAP, FACTIONS
 
+type _SquarePopulation = tuple[list[Squad], list[Actor]]
+
 
 class MapGrid:
     """Defines the map and contains all map-related function"""
 
     def __init__(self) -> None:
-        self._grid: defaultdict[
-            Location, tuple[list, list]
-        ] = defaultdict(lambda: ([], []))
+        self._grid: defaultdict[Location, _SquarePopulation] = defaultdict(lambda: ([], []))
         self._msg_log: deque[str] = deque([], maxlen=MAX_NUM_MESSAGES)
-        self._squares_to_delete:set[Location] = set()
+        self._squares_to_delete: set[Location] = set()
 
         dirname = os.path.dirname(__file__)
         mapfile = os.path.abspath(os.path.join(dirname, f'../maps/{MAP}'))
@@ -47,9 +47,8 @@ class MapGrid:
         # Fix colored display on Windows
         just_fix_windows_console()
 
-    def get_grid(self) -> defaultdict[
-            Location, tuple[list, list]
-        ]:
+    @property
+    def squares(self) -> defaultdict[Location, _SquarePopulation]:
         return self._grid
 
     def get_obstacles(self) -> set[Location]:
