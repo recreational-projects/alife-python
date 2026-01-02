@@ -46,7 +46,7 @@ async def main(loop: asyncio.AbstractEventLoop, grid: MapGrid) -> None:
                 # Loot if there are bodies in the same square. Prevents movement
                 if actorlist and squad_faction.can_loot:
                     max_lootable_corpses = min(len(actorlist), len(squad.actors))  # 1 guy loots 1 corpse at a time
-                    for actor in filter(lambda x: x.loot_value is not None, actorlist[:max_lootable_corpses]):
+                    for actor in actorlist[:max_lootable_corpses]:
                         tasks.append(loop.create_task(LootTask(grid, squad, actor).execute()))
                 else:
                     # Can't task a squad already doing something else

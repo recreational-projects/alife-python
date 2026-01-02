@@ -236,7 +236,7 @@ class LootTask(Task):
 
     @staticmethod
     async def _run(grid: MapGrid, squad: Squad, actor: Actor) -> bool:
-        if actor.loot_value is None:
+        if actor.loot_value == 0:
             return False  # already looted
 
         msg = f"{squad} is looting a {actor.faction}"
@@ -249,7 +249,7 @@ class LootTask(Task):
         squad.is_looting = True
 
         actor_loot_value = actor.loot_value
-        actor.loot_value = None
+        actor.loot_value = 0
 
         await asyncio.sleep(config.LOOT_DURATION)
         grid.remove(actor)
