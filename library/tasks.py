@@ -1,5 +1,6 @@
 import asyncio
 import random
+from abc import ABC
 
 from collections.abc import Awaitable
 
@@ -33,7 +34,7 @@ async def move_to(grid: MapGrid, squad: Squad, dest: Location) -> bool:
     return True
 
 
-class Task:
+class Task(ABC):
     """Base class for all tasks"""
 
     _steps: list[Awaitable]  # can chain multiple steps to create more complex tasks
@@ -52,7 +53,7 @@ class Task:
     @staticmethod
     def award_exp(squad: Squad) -> bool:
         """Award exp for task completion"""
-        if config.FACTIONS[squad.faction]["can_gain_exp"]:
+        if config.FACTIONS[squad.faction].can_gain_exp:
             for actor in squad.actors:
                 actor.gain_exp(random.randint(100, 300))
                 actor.rank_up()
@@ -67,8 +68,8 @@ class CombatTask(Task):
         self._steps = [self._run(grid, left, right)]
 
     async def _run(self, grid: MapGrid, left: Squad, right: Squad) -> bool:
-        left_firepower = sum([a.experience for a in left.actors]) * config.FACTIONS[left.faction]["relative_firepower"]
-        right_firepower = sum([a.experience for a in right.actors]) * config.FACTIONS[right.faction]["relative_firepower"]
+        left_firepower = sum([a.experience for a in left.actors]) * config.FACTIONS[left.faction].relative_firepower
+        right_firepower = sum([a.experience for a in right.actors]) * config.FACTIONS[right.faction].relative_firepower
 
         # determine "winning" squad, weighted by firepower.
         # More squad members with more experience + higher relative firepower = higher overall power
@@ -112,6 +113,9 @@ class MoveTask(Task):
         # generate random destination if it was not specified
         if dest is None:
             while (dest := (random.randint(0, config.GRID_X_SIZE - 1), random.randint(0, config.GRID_Y_SIZE - 1))) in grid.get_obstacles(): pass
+
+        if dest is None:
+            raise TypeError("Couldn't generate valid location for MoveTask")
 
         self._steps = [self._run(grid, squad, dest)]
 
@@ -232,7 +236,7 @@ class LootTask(Task):
 
     @staticmethod
     async def _run(grid: MapGrid, squad: Squad, actor: Actor) -> bool:
-        if actor.loot_value is None:
+        if actor.loot_value == 0:
             return False  # already looted
 
         msg = f"{squad} is looting a {actor.faction}"
@@ -245,7 +249,7 @@ class LootTask(Task):
         squad.is_looting = True
 
         actor_loot_value = actor.loot_value
-        actor.loot_value = None
+        actor.loot_value = 0
 
         await asyncio.sleep(config.LOOT_DURATION)
         grid.remove(actor)
@@ -262,14 +266,15 @@ class HuntSquadTask(Task):
 
     def __init__(self, grid: MapGrid, squad: Squad) -> None:
         target = grid.get_squad_in_vicinity(
-            squad.location, config.FACTIONS[squad.faction]["hostile"], max_actors=squad.num_actors()
+            squad.location, config.FACTIONS[squad.faction].hostile, max_actors=squad.num_actors()
         )
 
-        if target:
+        if not isinstance(target, Squad):
+            self._steps = []
+        else:
             grid.add_log_msg("HUNT", f"{squad} is hunting {target} at {target.location}", squad.location)
             self._steps = [self._run(grid, squad, target)]
-        else:
-            self._steps = []
+
 
     async def _run(self, grid: MapGrid, squad: Squad, target: Squad) -> bool:
         path = grid.pathfinder.create_path(squad.location, target.location)

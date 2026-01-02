@@ -1,4 +1,7 @@
 """Spawn parameters"""
+
+from library.faction import Faction
+
 SPAWN_FREQUENCY = 20  # frequency of new squad spawns (seconds)
 MIN_FACTION_SQUADS = 10  # min number of faction squads to spawn on startup
 MAX_FACTION_SQUADS = 12  # max number of faction squads to spawn on startup
@@ -27,85 +30,63 @@ GRID_Y_SIZE = 85
 RANKS = ("Rookie", "Novice", "Experienced", "Veteran", "Master", "Legend")  # rank progression of an actor
 EXP_PER_RANK = 2000  # Amount of exp required to advance a rank
 
+
 FACTIONS = {
-    "stalker": {
-        "spawn_bias": None,  # spawn bias on the grid, for example (0.5, 0.8) being lower-center
-        "relative_firepower": 1.0,  # relative firepower of the faction squad, 1.0 being the baseline
-        "hostile": ("mercenary", "bandit", "military", "monolith", "mutant"),  # factions hostile to the current faction
-        "can_loot": True,  # determines if this faction can loot bodies
-        "can_gain_exp": True,  # determines if actors of this faction can gain exp
-        "can_trade": True,  # determines if actors of this faction will visit traders
-        "can_hunt_artifacts": True,  # determines if actors of this faction will hunt for artifacts
-        "can_hunt_squads": True,  # determines if actors of this faction will take bounties on other squads
-        },
-    "bandit": {
-        "spawn_bias": (0.5, 0.5),
-        "relative_firepower": 0.9,
-        "hostile": ("stalker", "mercenary", "ward", "military", "monolith", "mutant"),
-        "can_loot": True,
-        "can_gain_exp": True,
-        "can_trade": True,
-        "can_hunt_artifacts": False,
-        "can_hunt_squads": False
-        },
-    "ward": {
-        "spawn_bias": (0.3, 0.6),
-        "relative_firepower": 1.4,
-        "hostile": ("spark", "bandit", "mercenary", "monolith", "mutant"),
-        "can_loot": True,
-        "can_gain_exp": True,
-        "can_trade": False,
-        "can_hunt_artifacts": False,
-        "can_hunt_squads": False
-    },
-    "spark": {
-        "spawn_bias": (0.1, 0.5),
-        "relative_firepower": 1.4,
-        "hostile": ("ward", "monolith", "mutant"),
-        "can_loot": True,
-        "can_gain_exp": True,
-        "can_trade": False,
-        "can_hunt_artifacts": False,
-        "can_hunt_squads": False
-    },
-    "mercenary": {
-        "spawn_bias": (0.1, 0.8),
-        "relative_firepower": 1.5,
-        "hostile": ("stalker", "bandit", "ward", "military", "monolith", "mutant"),
-        "can_loot": True,
-        "can_gain_exp": True,
-        "can_trade": False,
-        "can_hunt_artifacts": False,
-        "can_hunt_squads": True
-    },
-    "military": {
-        "spawn_bias": (0.5, 0.3),
-        "relative_firepower": 1.2,
-        "hostile": ("stalker", "bandit", "mercenary", "monolith", "mutant"),
-        "can_loot": True,
-        "can_gain_exp": True,
-        "can_trade": False,
-        "can_hunt_artifacts": False,
-        "can_hunt_squads": True
-    },
-    "monolith": {
-        "spawn_bias": (0.2, 0.0),
-        "relative_firepower": 1.8,
-        "hostile": ("stalker", "bandit", "ward", "spark", "mercenary", "military", "mutant"),
-        "can_loot": True,
-        "can_gain_exp": True,
-        "can_trade": False,
-        "can_hunt_artifacts": False,
-        "can_hunt_squads": False
-    },
-    "mutant": {
-        "spawn_bias": None,  # can spawn anywhere
-        "relative_firepower": 2.0,
-        "hostile": ("stalker", "bandit", "ward", "spark", "mercenary", "military", "monolith"),
-        "can_loot": False,
-        "can_gain_exp": False,
-        "can_trade": False,
-        "can_hunt_artifacts": False,
-        "can_hunt_squads": False
-    }
+    "stalker": Faction(
+        hostile={"mercenary", "bandit", "military", "monolith", "mutant"},
+        can_loot=True,
+        can_gain_exp=True,
+        can_trade=True,
+        can_hunt_artifacts=True,
+        can_hunt_squads=True,
+    ),
+    "bandit": Faction(
+        spawn_bias=(0.5, 0.5),
+        relative_firepower=0.9,
+        hostile={"stalker", "mercenary", "ward", "military", "monolith", "mutant"},
+        can_loot=True,
+        can_gain_exp=True,
+        can_trade=True,
+    ),
+    "ward": Faction(
+        spawn_bias=(0.3, 0.6),
+        relative_firepower=1.4,
+        hostile={"spark", "bandit", "mercenary", "monolith", "mutant"},
+        can_loot=True,
+        can_gain_exp=True,
+    ),
+    "spark": Faction(
+        spawn_bias=(0.1, 0.5),
+        relative_firepower=1.4,
+        hostile={"ward", "monolith", "mutant"},
+        can_loot=True,
+        can_gain_exp=True,
+    ),
+    "mercenary": Faction(
+        spawn_bias=(0.1, 0.8),
+        relative_firepower=1.5,
+        hostile={"stalker", "bandit", "ward", "military", "monolith", "mutant"},
+        can_loot=True,
+        can_gain_exp=True,
+        can_hunt_squads=True,
+    ),
+    "military": Faction(
+        spawn_bias=(0.5, 0.3),
+        relative_firepower=1.2,
+        hostile={"stalker", "bandit", "mercenary", "monolith", "mutant"},
+        can_loot=True,
+        can_gain_exp=True,
+        can_hunt_squads=True,
+    ),
+    "monolith": Faction(
+        spawn_bias=(0.2, 0.0),
+        relative_firepower=1.8,
+        hostile={"stalker", "bandit", "ward", "spark", "mercenary", "military", "mutant"},
+        can_loot=True,
+        can_gain_exp=True,
+    ),
+    "mutant": Faction(
+        relative_firepower=2.0,
+        hostile={"stalker", "bandit", "ward", "spark", "mercenary", "military", "monolith"},
+    ),
 }

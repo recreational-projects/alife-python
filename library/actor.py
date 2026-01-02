@@ -13,11 +13,11 @@ class Actor:
     location: Location  # TODO: consider removing and using squad location instead
     rank: str = RANKS[0]
     experience: int = 0
-    loot_value: int | None = 0
+    loot_value: int = 0
 
     def __post_init__(self) -> None:
         """Set-up actor after creation"""
-        if FACTIONS[self.faction]["can_gain_exp"]:
+        if FACTIONS[self.faction].can_gain_exp:
             if not self.experience: self.gain_exp(random.randint(1, (len(RANKS) - 1) * EXP_PER_RANK))
         else:
             # assume that actors that don't gain exp are "average" for combat purposes

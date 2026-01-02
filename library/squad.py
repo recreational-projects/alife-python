@@ -13,7 +13,7 @@ class Squad:
     location: Location
 
     sid: str | None = None
-    actors: list = field(default_factory=list)  # list of actors in the squad
+    actors: list[Actor] = field(default_factory=list)
 
     has_task: bool = False
     in_combat: bool = False

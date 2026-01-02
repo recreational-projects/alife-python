@@ -4,7 +4,7 @@ from library import CombatTask, IdleTask, MoveTask, LootTask, HuntArtifactsTask,
 
 
 @pytest.mark.asyncio
-async def test_combat_task(monkeypatch):
+async def test_combat_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
 
     squad1 = Squad("stalker", (1, 1))
@@ -28,17 +28,17 @@ async def test_combat_task(monkeypatch):
     assert len(squad2.actors) == 2, "squad2 should not have alive actors"
     assert not squad2.in_combat, "squad2 should not be in combat"
 
-    squads, actors = grid.get_grid()[(1, 1)]
+    squads, actors = grid.squares[(1, 1)]
 
     assert len(squads) == 1, "Actorless squads should not be on the map"
     assert len(actors) == 2, "CombatTask should produce exactly 2 lootable bodies"
 
     for actor in actors:
-        assert actor.loot_value is not None, "Actor should not be looted"
+        assert actor.loot_value > 0, "Actor should not be looted"
 
 
 @pytest.mark.asyncio
-async def test_move_task(monkeypatch):
+async def test_move_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
     squad = Squad("stalker", (0, 0))
     squad.add_actor(Actor("stalker", (0, 0)))
@@ -48,16 +48,16 @@ async def test_move_task(monkeypatch):
 
     await MoveTask(grid, squad, (5, 5)).execute()
 
-    assert not grid.get_grid()[(1, 1)][0], "Squad should be removed from the original square"
+    assert not grid.squares[(1, 1)][0], "Squad should be removed from the original square"
     assert squad.location == (5, 5), "Squad should move to expected location"
     assert squad.actors[0].location == (5, 5), "Squad actors should move to expected location"
     assert squad.has_task is False, "Squad should mark task as complete"
 
-    assert grid.get_grid()[(5, 5)][0][0] is squad, "Squad should be placed on the destination square"
+    assert grid.squares[(5, 5)][0][0] is squad, "Squad should be placed on the destination square"
 
 
 @pytest.mark.asyncio
-async def test_idle_task():
+async def test_idle_task() -> None:
     grid = MapGrid()
     squad = Squad("test_faction", (0, 0))
 
@@ -66,7 +66,7 @@ async def test_idle_task():
 
 
 @pytest.mark.asyncio
-async def test_hunt_artifacts_task(monkeypatch):
+async def test_hunt_artifacts_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
     grid._area_map["fields"].extend([(1, 1), (4, 4)])
 
@@ -88,7 +88,7 @@ async def test_hunt_artifacts_task(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_trade_task(monkeypatch):
+async def test_trade_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
     grid._area_map["traders"].extend([(1, 1), (4, 4)])
 
@@ -110,7 +110,7 @@ async def test_trade_task(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_loot_task(monkeypatch):
+async def test_loot_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
 
     squad = Squad("stalker", (1, 1))
@@ -126,14 +126,14 @@ async def test_loot_task(monkeypatch):
     await LootTask(grid, squad, lootable).execute()
 
     assert squad.is_looting is False, "Squad should not be marked as looting"
-    assert lootable.loot_value is None, "Actor should be marked as looted"
+    assert lootable.loot_value == 0, "Actor should be looted"
     assert squad.actors[0].loot_value == (prev_actor_value + lootable_value), "Actor's loot value should increase"
 
-    assert len(grid.get_grid()[(1, 1)][1]) == 0, "Looted actor should be removed from the grid"
+    assert len(grid.squares[(1, 1)][1]) == 0, "Looted actor should be removed from the grid"
 
 
 @pytest.mark.asyncio
-async def test_hunt_squad_task(monkeypatch):
+async def test_hunt_squad_task(monkeypatch: pytest.MonkeyPatch) -> None:
     grid = MapGrid()
 
     squad1 = Squad("stalker", (0, 0))
