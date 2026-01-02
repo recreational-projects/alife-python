@@ -1,25 +1,26 @@
+import pytest
 import uuid
 
 from library import Squad, Actor
 
 
-def test_squad_init(monkeypatch):
+def test_squad_init(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr('uuid.uuid4', lambda: uuid.UUID("6148b8ca-a130-11f0-b311-8c859097fb57"))
-    squad = Squad(faction="test_faction", location=(0, 55))
+    squad = Squad(faction="stalker", location=(0, 55))
     actor = Actor("stalker", (0, 25))
     squad.add_actor(actor)
 
-    assert squad.faction == "test_faction", "Squad faction should be correct"
+    assert squad.faction == "stalker", "Squad faction should be correct"
     assert squad.location == (0, 55), "Squad location should be correct"
     assert len(squad.actors) == 1, "Squad should have exactly 1 actors"
     assert not squad.has_task, "Squad should not have tasks"
     assert not squad.in_combat, "Squad should not be in combat"
     assert not squad.is_looting, "Squad should not be looting"
     assert not squad.is_busy(), "Squad should not be busy"
-    assert str(squad) == "test_faction squad (SID=8c859097fb57) (1 actor)", "Squad string should be correct"
+    assert str(squad) == "stalker squad (SID=8c859097fb57) (1 actor)", "Squad string should be correct"
 
 
-def test_squad_update():
+def test_squad_update() -> None:
     squad = Squad(faction="stalker", location=(2, 25))
     actor = Actor("stalker", (2, 25))
 

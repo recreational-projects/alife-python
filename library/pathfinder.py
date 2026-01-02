@@ -13,7 +13,10 @@ class Pathfinder:
     def __init__(self, obstacles: set[Location]) -> None:
 
         # Cache computed path chunks for faster pathfinding
-        self._path_cache = {}
+        self._path_cache: dict[
+            tuple[Location, Location],
+            list[Location],
+        ] = {}
         self._neighbors_including_diagonals = [
             (0, 1), (1, 1), (1, 0), (1, -1),
             (0, -1), (-1, -1), (-1, 0), (-1, 1)
@@ -120,10 +123,10 @@ class Pathfinder:
     def create_8way_astar_path(self, start: Location, goal: Location, obstacles: set[Location]) -> list[Location] | None:
         """A* pathfinding on a 2D grid with 8-direction movement"""
 
-        open_set = []
+        open_set: list[tuple[float, float, Location]] = []
         heapq.heappush(open_set, (self.chebyshev_distance(start, goal), 0, start))
-        came_from = {}
-        g_score = {start: 0}
+        came_from: dict[Location, Location] = {}
+        g_score = {start: 0.0}
 
         while open_set:
             _, current_g, current = heapq.heappop(open_set)
@@ -241,6 +244,7 @@ class Pathfinder:
 
             # Try simple direct path first. If it has obstacles - fallback to A*
             tentative_path = self.create_simple_path(current, next_goal)
+            segment = None
             if not set(tentative_path) & obstacles:
                 segment = tentative_path
             else:
